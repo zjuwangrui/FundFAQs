@@ -8,6 +8,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 class Config:
     """Base configuration shared by all environments."""
 
+    DEBUG: bool = False
+
     # SQLite database file path
     DATABASE: str = os.path.join(BASE_DIR, "fund_faqs.db")
 
