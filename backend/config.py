@@ -26,6 +26,10 @@ class Config:
     # CORS – in production restrict to actual frontend origin
     CORS_ORIGINS: str = "*"
 
+    # Admin secret for protected article operations (update/delete).
+    # In production, override via environment variable FUNDFAQ_ADMIN_SECRET.
+    ADMIN_SECRET: str = os.getenv("FUNDFAQ_ADMIN_SECRET", "CHANGE_ME_FUNDFAQ_ADMIN_SECRET")
+
 
 class DevelopmentConfig(Config):
     DEBUG: bool = True

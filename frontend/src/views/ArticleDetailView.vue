@@ -8,12 +8,36 @@
 
     <!-- Content -->
     <template v-else>
-      <!-- Back + Edit -->
+      <!-- Back + Admin Actions -->
       <div class="detail-nav">
         <router-link to="/" class="link-back">← 返回列表</router-link>
-        <router-link :to="`/article/${article.id}/edit`" class="btn btn-outline btn-sm">
-          编辑文章
-        </router-link>
+
+        <!-- 仅管理员（解锁后）可见编辑 / 删除按钮 -->
+        <div class="detail-actions">
+          <button
+            v-if="!isAdmin"
+            type="button"
+            class="btn btn-secondary btn-sm"
+            @click="unlockWithKey"
+          >
+            管理员解锁
+          </button>
+          <template v-else>
+            <router-link
+              :to="`/article/${article.id}/edit`"
+              class="btn btn-outline btn-sm"
+            >
+              编辑文章
+            </router-link>
+            <button
+              type="button"
+              class="btn btn-danger btn-sm"
+              @click="confirmDelete"
+            >
+              删除文章
+            </button>
+          </template>
+        </div>
       </div>
 
       <!-- Header -->
@@ -76,6 +100,14 @@
             <div class="comment-item__header">
               <span class="comment-item__author">{{ comment.commenter }}</span>
               <span class="comment-item__time">{{ formatDate(comment.created_at) }}</span>
+              <button
+                v-if="isAdmin"
+                type="button"
+                class="btn btn-link btn-xs comment-delete-btn"
+                @click="confirmDeleteComment(comment.id)"
+              >
+                删除
+              </button>
             </div>
             <p class="comment-item__content">{{ comment.content }}</p>
           </div>
@@ -121,6 +153,70 @@ import type { Article, Comment } from '../types'
 
 const route = useRoute()
 const articleId = computed(() => Number(route.params.id))
+
+// ---------- 管理 / 编辑权限 ----------
+// 进入页面时，如果本标签页已经解锁过管理员模式，则自动恢复
+const isAdmin = ref(!!sessionStorage.getItem('fund_faq_admin_secret'))
+
+function unlockWithKey() {
+  const input = window.prompt('请输入管理密钥：')
+  if (!input) return
+
+  // 不在前端校验密钥，仅在本地做一次标记，真正校验在后端接口
+  sessionStorage.setItem('fund_faq_admin_secret', input)
+  isAdmin.value = true
+  alert('已进入管理员模式，可以编辑和删除文章。')
+}
+
+function confirmDelete() {
+  if (!window.confirm('确定要删除这篇文章吗？此操作不可恢复。')) {
+    return
+  }
+  const secret = sessionStorage.getItem('fund_faq_admin_secret') ?? ''
+  if (!secret) {
+    alert('当前未处于管理员模式，请先通过管理密钥解锁。')
+    return
+  }
+
+  articleApi
+    .remove(articleId.value, secret)
+    .then(() => {
+      alert('文章已删除')
+      window.location.href = '/'
+    })
+    .catch((err: unknown) => {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined
+      alert(msg ?? '删除失败，请稍后再试')
+    })
+}
+
+function confirmDeleteComment(commentId: number) {
+  if (!window.confirm('确定要删除这条评论吗？此操作不可恢复。')) {
+    return
+  }
+  const secret = sessionStorage.getItem('fund_faq_admin_secret') ?? ''
+  if (!secret) {
+    alert('当前未处于管理员模式，请先通过管理密钥解锁。')
+    return
+  }
+
+  commentApi
+    .remove(articleId.value, commentId, secret)
+    .then(() => {
+      alert('评论已删除')
+      loadComments(commentPage.value)
+    })
+    .catch((err: unknown) => {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined
+      alert(msg ?? '删除评论失败，请稍后再试')
+    })
+}
 
 // ---------- Article ----------
 const article = ref<Article | null>(null)

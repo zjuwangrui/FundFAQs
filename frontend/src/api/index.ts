@@ -22,8 +22,15 @@ export const articleApi = {
 
   create: (payload: ArticlePayload) => http.post<Article>('/articles', payload),
 
-  update: (id: number, payload: ArticlePayload) =>
+  // 仅管理员可编辑：需要附带 secret
+  update: (id: number, payload: ArticlePayload & { secret: string }) =>
     http.put<Article>(`/articles/${id}`, payload),
+
+  // 仅管理员可删除：需要附带 secret
+  remove: (id: number, secret: string) =>
+    http.delete<{ message: string }>(`/articles/${id}`, {
+      data: { secret },
+    }),
 
   search: (q: string, page = 1, perPage = 10) =>
     http.get<PaginatedArticles>('/articles/search', {
@@ -41,4 +48,9 @@ export const commentApi = {
 
   create: (articleId: number, payload: CommentPayload) =>
     http.post<Comment>(`/articles/${articleId}/comments`, payload),
+
+  remove: (articleId: number, commentId: number, secret: string) =>
+    http.delete<{ message: string }>(`/articles/${articleId}/comments/${commentId}`, {
+      data: { secret },
+    }),
 }

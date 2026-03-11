@@ -103,9 +103,17 @@ async function handleSubmit() {
   submitting.value = true
   try {
     if (isEditing.value) {
+      // 仅允许通过详情页解锁后的管理员编辑
+      const secret = sessionStorage.getItem('fund_faq_admin_secret') ?? ''
+      if (!secret) {
+        alert('当前未处于管理员模式，请先在文章详情页通过管理密钥解锁。')
+        return
+      }
+
       await articleApi.update(articleId.value, {
         title: form.value.title.trim(),
         content: form.value.content.trim(),
+        secret,
       })
       router.push(`/article/${articleId.value}`)
     } else {

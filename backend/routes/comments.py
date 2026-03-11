@@ -36,8 +36,18 @@ def get_comments(article_id: int):
     return paginated_response([dict(r) for r in rows], total, page, per_page, "comments")
 
 
+def _require_admin_secret(data: dict):
+    """Validate admin secret for protected operations."""
+    secret = str(data.get("secret", "")).strip()
+    if not secret:
+        return error_response("缺少管理密钥", 403)
+    if secret != active_config.ADMIN_SECRET:
+        return error_response("管理密钥不正确", 403)
+    return None
+
+
 # ---------------------------------------------------------------------------
-# POST /api/articles/<article_id>/comments  –  create
+# POST /api/articles/<article_id>/comments  –  create (public)
 # ---------------------------------------------------------------------------
 
 @comments_bp.route("", methods=["POST"])
@@ -69,3 +79,27 @@ def create_comment(article_id: int):
         ).fetchone()
 
     return dict(row), 201
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/articles/<article_id>/comments/<id>  –  delete (admin only)
+# ---------------------------------------------------------------------------
+
+@comments_bp.route("/<int:comment_id>", methods=["DELETE"])
+def delete_comment(article_id: int, comment_id: int):
+    data = request.get_json(silent=True) or {}
+
+    # admin secret check
+    err = _require_admin_secret(data)
+    if err is not None:
+        return err
+
+    with get_db() as conn:
+        cur = conn.execute(
+            "DELETE FROM comments WHERE id = ? AND article_id = ?",
+            (comment_id, article_id),
+        )
+        if cur.rowcount == 0:
+            return error_response("评论不存在", 404)
+
+    return {"message": "评论已删除"}

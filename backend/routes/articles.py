@@ -72,8 +72,18 @@ def get_article(article_id: int):
     return dict(row)   # Flask 3 auto-jsonifies dicts
 
 
+def _require_admin_secret(data: dict):
+    """Validate admin secret for protected operations."""
+    secret = str(data.get("secret", "")).strip()
+    if not secret:
+        return error_response("缺少管理密钥", 403)
+    if secret != active_config.ADMIN_SECRET:
+        return error_response("管理密钥不正确", 403)
+    return None
+
+
 # ---------------------------------------------------------------------------
-# POST /api/articles  –  create
+# POST /api/articles  –  create (public)
 # ---------------------------------------------------------------------------
 
 @articles_bp.route("", methods=["POST"])
@@ -103,12 +113,18 @@ def create_article():
 
 
 # ---------------------------------------------------------------------------
-# PUT /api/articles/<id>  –  update
+# PUT /api/articles/<id>  –  update (admin only)
 # ---------------------------------------------------------------------------
 
 @articles_bp.route("/<int:article_id>", methods=["PUT"])
 def update_article(article_id: int):
     data = request.get_json(silent=True) or {}
+
+    # admin secret check
+    err = _require_admin_secret(data)
+    if err is not None:
+        return err
+
     title = str(data.get("title", "")).strip()
     content = str(data.get("content", "")).strip()
 
@@ -132,3 +148,24 @@ def update_article(article_id: int):
     if not row:
         return error_response("文章不存在", 404)
     return dict(row)
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/articles/<id>  –  delete (admin only)
+# ---------------------------------------------------------------------------
+
+@articles_bp.route("/<int:article_id>", methods=["DELETE"])
+def delete_article(article_id: int):
+    data = request.get_json(silent=True) or {}
+
+    # admin secret check
+    err = _require_admin_secret(data)
+    if err is not None:
+        return err
+
+    with get_db() as conn:
+        cur = conn.execute("DELETE FROM articles WHERE id = ?", (article_id,))
+        if cur.rowcount == 0:
+            return error_response("文章不存在", 404)
+
+    return {"message": "文章已删除"}
