@@ -7,3 +7,6 @@ backend/*.db
 
 frontend/node_modules/
 frontend/dist/
+
+# 部署说明仅保留在服务器本地，不纳入版本库
+DEPLOY.md
