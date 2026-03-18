@@ -251,6 +251,11 @@ a {
   flex-wrap: wrap;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
 .result-hint {
   color: var(--color-text-muted);
   font-size: 0.92rem;

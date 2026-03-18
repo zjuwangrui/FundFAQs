@@ -4,6 +4,7 @@ from flask import Flask
 
 from routes.articles import articles_bp
 from routes.comments import comments_bp
+from routes.system import system_bp
 
 
 def register_blueprints(app: Flask) -> None:
@@ -15,3 +16,6 @@ def register_blueprints(app: Flask) -> None:
         comments_bp,
         url_prefix="/api/articles/<int:article_id>/comments",
     )
+    
+    # System settings route
+    app.register_blueprint(system_bp, url_prefix="/api/system")

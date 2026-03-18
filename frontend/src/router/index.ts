@@ -10,6 +10,11 @@ const router = createRouter({
       component: HomeView,
     },
     {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/SettingsView.vue'),
+    },
+    {
       // Must come before /:id to avoid "new" matching the int param
       path: '/article/new',
       name: 'new-article',

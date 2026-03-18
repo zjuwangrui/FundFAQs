@@ -54,3 +54,10 @@ export const commentApi = {
       data: { secret },
     }),
 }
+
+// ---------- System ----------
+
+export const systemApi = {
+  updateEmailConfig: (email: string, authCode: string, secret: string) =>
+    http.post('/system/email-config', { email, auth_code: authCode, secret }),
+}

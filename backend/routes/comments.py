@@ -5,6 +5,7 @@ from flask import Blueprint, request
 from config import active_config
 from database import get_db
 from utils import error_response, now_iso, paginate_args, paginated_response
+from mailer import send_notification
 
 comments_bp = Blueprint("comments", __name__)
 
@@ -64,8 +65,9 @@ def create_comment(article_id: int):
         return error_response(f"昵称不能超过 {active_config.MAX_COMMENTER_LENGTH} 个字符")
 
     with get_db() as conn:
+        # Check article existence and get title for notification
         article = conn.execute(
-            "SELECT id FROM articles WHERE id = ?", (article_id,)
+            "SELECT id, title FROM articles WHERE id = ?", (article_id,)
         ).fetchone()
         if not article:
             return error_response("文章不存在", 404)
@@ -77,6 +79,24 @@ def create_comment(article_id: int):
         row = conn.execute(
             "SELECT * FROM comments WHERE id = ?", (cur.lastrowid,)
         ).fetchone()
+
+    # Send email notification asynchronously
+    send_notification(
+        subject=f"【FundFAQs】新评论提醒：{article['title']}",
+        body=f"""您好，您的文章收到了新的评论！
+
+文章：《{article['title']}》
+评论人：{commenter}
+评论时间：{now_iso()}
+
+评论内容：
+--------------------------------------------------
+{content}
+--------------------------------------------------
+
+请及时登录后台查看。
+"""
+    )
 
     return dict(row), 201
 

@@ -31,7 +31,10 @@
           共 <strong>{{ total }}</strong> 篇文章
         </template>
       </span>
-      <router-link to="/article/new" class="btn btn-primary publish-btn">+ 发布文章</router-link>
+      <div class="action-buttons">
+        <router-link to="/article/new" class="btn btn-primary publish-btn">+ 发布文章</router-link>
+        <router-link to="/settings" class="btn btn-secondary setting-btn">⚙ 邮箱配置</router-link>
+      </div>
     </div>
 
     <!-- Loading -->
